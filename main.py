@@ -10,12 +10,30 @@ import pyautogui
 import numpy
 
 myUrl = "https://miltech.repairshopr.com/invoices"
-path = "C:\\Users\tree_\\Downloads\\chromedriver_win32\\chromedriver.exe"
 
 
-def pyrun():
+
+def run():
+    test()
+
+
+def test():
     number = pyautogui.prompt("Click OK if you have copied the number to clipboard")
-    setup(number)
+    while number is not None or number is not "":
+        values = setup(number)
+        enter_values(values)
+        number = pyautogui.prompt("Click OK if you have copied the number to clipboard")
+
+
+def enter_values(values):
+    pyautogui.click()
+    val1 = values[0]
+    val2 = values[1]
+    pyautogui.typewrite(val2)
+    pyautogui.move(150, 0)
+    pyautogui.click()
+    pyautogui.typewrite(val1)
+
 
 
 def setup(number):
@@ -26,7 +44,7 @@ def setup(number):
     browser.get(myUrl)
     login(browser)
     search_num(browser, number)
-    get_info(browser)
+    return get_info(browser)
 
 
 def search_num(browser, number):
@@ -48,6 +66,7 @@ def get_info(browser):
     name = browser.find_element_by_xpath(
         "/html/body/div[1]/div[3]/div/div/div[3]/div[1]/div[1]/div[2]/table/tbody/tr[2]/td/span/a")
     print(name.get_attribute('text'))
+    return [mobile.get_attribute('text'), name.get_attribute('text')]
 
 def login(browser):
     if browser.find_element_by_id("user_email"):
@@ -65,6 +84,6 @@ def login(browser):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    pyrun()
+    run()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
