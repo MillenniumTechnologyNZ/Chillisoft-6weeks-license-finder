@@ -3,8 +3,11 @@ import bs4
 import pyautogui
 from openpyxl import Workbook
 from selenium import webdriver
-
-import secrets
+import tkinter as tk
+global username
+global password
+global browser
+global tk_window
 file_location = "Esetcustomers.xlsx"
 chillisoft_prefix = "https://secure.chillisoft.net"
 login_url = "https://secure.chillisoft.net/login/"
@@ -12,13 +15,37 @@ postVerifiedUrl = "https://secure.chillisoft.net/ssl/extranet/index.cfm/licence-
 
 
 def run():
-    operation()
+    sheets_and_order_setup()
 
 
-def operation():
+def gui_app(message):
+    global username
+    global password
+    global browser
+    global tk_window
+    tk_window = tk.Tk()
+    tk_window.geometry('400x150')
+    tk_window.title('Chillisoft Login')
+    # username label and text entry box
+    tk.Label(tk_window, text=message)
+    tk.Label(tk_window, text="User Name").grid(row=0, column=0)
+    username = tk.StringVar()
+    tk.Entry(tk_window, textvariable=username).grid(row=0, column=1)
+    # password label and password entry box
+    tk.Label(tk_window, text="Password").grid(row=1, column=0)
+    password = tk.StringVar()
+    tk.Entry(tk_window, textvariable=password).grid(row=1, column=1)
+    # login button
+    tk.Button(tk_window, text="Login", command=validate).grid(row=4, column=0)
+    tk_window.mainloop()
+
+
+def sheets_and_order_setup():
+    global browser
     browser = setup()
+    gui_app("Enter Chillisoft details")
     pyautogui.confirm("Click OK to proceed")
-    persons = get_profiles(browser)
+    persons = get_profiles()
     wb = Workbook()
     # Sets up the Excel spreadsheet
     sheets = wb.sheetnames
@@ -29,7 +56,7 @@ def operation():
     wb.create_sheet("CyberSecMac")
     wb.create_sheet("Other")
     # ----
-    get_info(browser, wb, persons)
+    get_info(wb, persons)
     wb.save(file_location)
 
 
@@ -37,14 +64,15 @@ def setup():
     option = webdriver.ChromeOptions()
     option.add_argument('headless')
     # , options=option
-    browser = webdriver.Chrome('chromedriver.exe', options=option)
-    return browser
+    browserValue = webdriver.Chrome('chromedriver.exe')
+    return browserValue
 
 
-def get_profiles(browser):
-    browser.get(login_url)
-    is_logged_in(browser)
+def get_profiles():
+    global browser
     browser.get(postVerifiedUrl)
+    # if not is_logged_in():
+    #  raise Exception("Password and Username seem incorrect")
     soup = bs4.BeautifulSoup(browser.page_source, 'lxml')
     persons = []
     for links in soup.select("#jax > div.uk-hidden-small > table > tbody > tr > td:nth-child(7) > a"):
@@ -54,15 +82,17 @@ def get_profiles(browser):
     # return get_info(browser)
 
 
-def is_logged_in(browser):
+def is_logged_in():
+    global browser
     try:
         browser.find_element_by_id("LoginName")
-        login(browser)
+        return False
     finally:
-        return
+        return True
 
 
-def get_info(browser, wb, persons):
+def get_info(wb, persons):
+    global browser
     print("Getting info")
     nod32_count, int_sec_count, multi_count, mac_count, other_count = 0, 0, 0, 0, 0
     for index, person in enumerate(persons):
@@ -94,21 +124,39 @@ def add_to_sheet(sheet, index, soup, offset):
           str(sheet['B' + str(1 + offset)].value))
 
 
-def login(browser):
+def validate():
+    global username
+    global password
+    global browser
+    global tk_window
+    tk_window.destroy()
+    if len(bs4.BeautifulSoup(browser.page_source, 'lxml').select(
+            "#jax > div.uk-hidden-small > table > thead > tr > th:nth-child(1)")) > 0:
+        return
+    else:
+        login(username.get(), password.get())
+        if len(bs4.BeautifulSoup(browser.page_source, 'lxml').select("body > section > div > div > p")) > 0:
+            pyautogui.click
+            gui_app()
+
+
+def login(usr, pswd):
+    global browser
     login_id = "LoginName"
     password_id = "Password"
     submit_id = "sendbutton2"
+    browser.get(login_url)
     if browser.find_element_by_id(login_id):
         item = browser.find_element_by_id(login_id)
         item.click()
         item.clear()
-        item.send_keys(secrets.username)
+        item.send_keys(usr)
 
     if browser.find_element_by_id(password_id):
         item = browser.find_element_by_id(password_id)
         item.click()
         item.clear()
-        item.send_keys(secrets.password)
+        item.send_keys(pswd)
         submit_btn = browser.find_element_by_name(submit_id)
         submit_btn.click()
     print("Signed in")
