@@ -64,15 +64,13 @@ def setup():
     option = webdriver.ChromeOptions()
     option.add_argument('headless')
     # , options=option
-    browserValue = webdriver.Chrome('chromedriver.exe')
+    browserValue = webdriver.Chrome('chromedriver.exe', options=option)
     return browserValue
 
 
 def get_profiles():
     global browser
     browser.get(postVerifiedUrl)
-    # if not is_logged_in():
-    #  raise Exception("Password and Username seem incorrect")
     soup = bs4.BeautifulSoup(browser.page_source, 'lxml')
     persons = []
     for links in soup.select("#jax > div.uk-hidden-small > table > tbody > tr > td:nth-child(7) > a"):
@@ -80,15 +78,6 @@ def get_profiles():
     return persons
     # Search
     # return get_info(browser)
-
-
-def is_logged_in():
-    global browser
-    try:
-        browser.find_element_by_id("LoginName")
-        return False
-    finally:
-        return True
 
 
 def get_info(wb, persons):
@@ -132,12 +121,12 @@ def validate():
     tk_window.destroy()
     if len(bs4.BeautifulSoup(browser.page_source, 'lxml').select(
             "#jax > div.uk-hidden-small > table > thead > tr > th:nth-child(1)")) > 0:
-        return
+        print("Sign in successful")
     else:
         login(username.get(), password.get())
         if len(bs4.BeautifulSoup(browser.page_source, 'lxml').select("body > section > div > div > p")) > 0:
-            pyautogui.click
-            gui_app()
+            print("Unsuccessful sign in - try again")
+            gui_app("Details unsuccessful")
 
 
 def login(usr, pswd):
