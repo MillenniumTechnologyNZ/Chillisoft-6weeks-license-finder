@@ -4,6 +4,7 @@ import pyautogui
 from openpyxl import Workbook
 from selenium import webdriver
 import tkinter as tk
+
 global username
 global password
 global browser
@@ -18,7 +19,7 @@ def run():
     sheets_and_order_setup()
 
 
-def gui_app(message):
+def gui_app(message):  # ----Gets the User's Details----
     global username
     global password
     global browser
@@ -40,7 +41,7 @@ def gui_app(message):
     tk_window.mainloop()
 
 
-def sheets_and_order_setup():
+def sheets_and_order_setup():  # ----------Main Process----------
     global browser
     browser = setup()
     gui_app("Enter Chillisoft details")
@@ -58,9 +59,11 @@ def sheets_and_order_setup():
     # ----
     get_info(wb, persons)
     wb.save(file_location)
+    print("--Completed, You May Now Close This Window--")
+    raise SystemExit
 
 
-def setup():
+def setup():  # creates the selenium browser, without it loading up
     option = webdriver.ChromeOptions()
     option.add_argument('headless')
     # , options=option
@@ -68,7 +71,7 @@ def setup():
     return browserValue
 
 
-def get_profiles():
+def get_profiles():  # gets all the links to each of the users
     global browser
     browser.get(postVerifiedUrl)
     soup = bs4.BeautifulSoup(browser.page_source, 'lxml')
@@ -76,18 +79,18 @@ def get_profiles():
     for links in soup.select("#jax > div.uk-hidden-small > table > tbody > tr > td:nth-child(7) > a"):
         persons.append(links.get('href'))
     return persons
-    # Search
-    # return get_info(browser)
 
 
-def get_info(wb, persons):
+def get_info(wb, persons):  # get and add each user to the excel spreadsheet, based on their type of license
     global browser
     print("Getting info")
     nod32_count, int_sec_count, multi_count, mac_count, other_count = 0, 0, 0, 0, 0
     for index, person in enumerate(persons):
         browser.get(chillisoft_prefix + person)
         profile_html_parse = bs4.BeautifulSoup(browser.page_source, 'lxml')
+
         license_type = profile_html_parse.select("div > div.uk-width-7-10")[0].get_text()
+
         if license_type == "ESET NOD32 Antivirus":
             add_to_sheet(wb["Nod32"], index, profile_html_parse, nod32_count)
             nod32_count += 1
@@ -106,14 +109,17 @@ def get_info(wb, persons):
             other_count += 1
 
 
-def add_to_sheet(sheet, index, soup, offset):
+def add_to_sheet(sheet, index, soup, offset):  # after determining the type of licence, adds the values to the sheet --- note the qty and date values may be subject to change, based on updates to the website.
     sheet['A' + str(1 + offset)] = soup.select("#licenceeTab > div > div:nth-child(3)")[0].get_text()
     sheet['B' + str(1 + offset)] = soup.select("#licenceeTab > div > div:nth-child(5)")[0].get_text()
+    sheet['C' + str(1 + offset)] = soup.select("div > div.uk-width-3-10.uk-text-right")[0].get_text()  # gets the qty
+    sheet['D' + str(1 + offset)] = soup.select("div > div.uk-width-1-1")[5].get_text()  # gets the expiry date
+
     print("Added customer: " + str(index) + " | " + str(sheet['A' + str(1 + offset)].value) + " " +
-          str(sheet['B' + str(1 + offset)].value))
+          str(sheet['B' + str(1 + offset)].value) + " " + str(sheet['C' + str(1 + offset)].value) + " Expires:" + str(sheet['D' + str(1 + offset)].value))
 
 
-def validate():
+def validate():  # checks the username and password works.
     global username
     global password
     global browser
@@ -129,7 +135,7 @@ def validate():
             gui_app("Details unsuccessful")
 
 
-def login(usr, pswd):
+def login(usr, pswd):  # proceeds to attempt to log the user in with the provided keys
     global browser
     login_id = "LoginName"
     password_id = "Password"
